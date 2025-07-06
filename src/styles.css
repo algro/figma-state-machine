@@ -12,12 +12,12 @@ html {
 .container {
 	display: flex;
 	flex-direction: column;
-	align-items: center;
-	justify-content: center;
-	height: 100%;
+	align-items: flex-start;
+	justify-content: flex-start;
 	width: 100%;
 	padding: 16px;
 	gap: 16px;
+	box-sizing: border-box;
 }
 
 .form-group {
@@ -25,7 +25,6 @@ html {
 	flex-direction: column;
 	gap: 8px;
 	width: 100%;
-	max-width: 250px;
 }
 
 .form-group label {
@@ -35,7 +34,7 @@ html {
 }
 
 .select-input {
-	padding: 8px 12px;
+	padding: 8px 12px 8px 12px;
 	border-radius: 6px;
 	border: 1px solid var(--figma-color-border);
 	background-color: var(--figma-color-bg);
@@ -43,6 +42,7 @@ html {
 	font-size: 14px;
 	font-family: inherit;
 	cursor: pointer;
+	appearance: none;
 }
 
 .select-input:focus {
@@ -111,4 +111,70 @@ html {
   background-color: var(--figma-color-bg-brand);
   color: var(--figma-color-text-onbrand);
   border: 1px solid var(--figma-color-border-brand);
+}
+
+/* Empty State Styles */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 16px;
+  color: var(--figma-color-text-secondary);
+  width: 100%;
+  flex: 1;
+  box-sizing: border-box;
+}
+
+.empty-state p {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.instance-selection {
+  width: 100%;
+  align-self: flex-start;
+}
+
+.horizontal-group {
+  display: flex;
+  gap: 8px;
+  width: 100%;
+}
+
+.horizontal-group .select-input {
+  flex: 1;
+}
+
+.property-groups {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+}
+
+.property-group {
+  display: flex;
+  gap: 8px;
+  width: 100%;
+}
+
+.property-group .property-name {
+  flex: 1;
+  padding: 8px 12px;
+  border-radius: 6px;
+  border: 1px solid var(--figma-color-border);
+  background-color: var(--figma-color-bg-secondary);
+  color: var(--figma-color-text-secondary);
+  font-size: 14px;
+  font-family: inherit;
+  display: flex;
+  align-items: center;
+  cursor: not-allowed;
+}
+
+.property-group .select-input {
+  flex: 1;
 }
