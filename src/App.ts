@@ -25,6 +25,10 @@ export default (function App() {
 					<div id="property-groups" class="property-groups">
 						<!-- Property groups will be dynamically generated here -->
 					</div>
+					<p class="label">And set other</p>
+					<div id="property-groups-others" class="property-groups">
+						<!-- Property groups will be dynamically generated here -->
+					</div>
 				
 
 				</div>

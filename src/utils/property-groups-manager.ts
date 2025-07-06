@@ -8,7 +8,26 @@ export class PropertyGroupsManager {
    * Generate property groups for the selected instance
    */
   static generatePropertyGroups(selectedInstance: any, globalInstanceData: any[]): void {
-    const propertyGroupsContainer = document.getElementById('property-groups');
+    this.generatePropertyGroupsForContainer('property-groups', selectedInstance, globalInstanceData, false);
+  }
+  
+  /**
+   * Generate property groups for the "other" section with "Keep initial" option
+   */
+  static generateOtherPropertyGroups(selectedInstance: any, globalInstanceData: any[]): void {
+    this.generatePropertyGroupsForContainer('property-groups-others', selectedInstance, globalInstanceData, true);
+  }
+  
+  /**
+   * Generate property groups for a specific container
+   */
+  private static generatePropertyGroupsForContainer(
+    containerId: string, 
+    selectedInstance: any, 
+    globalInstanceData: any[], 
+    includeKeepInitial: boolean
+  ): void {
+    const propertyGroupsContainer = document.getElementById(containerId);
     
     if (propertyGroupsContainer) {
       // Clear existing groups
@@ -30,19 +49,28 @@ export class PropertyGroupsManager {
         // Create variants dropdown
         const variantsSelect = document.createElement('select');
         variantsSelect.className = 'select-input';
-        variantsSelect.id = `property-variants-${index}`;
+        variantsSelect.id = `${containerId}-variants-${index}`;
         
         // Get variants for this property
         const variants = VariantUtils.getVariantsForProperty(selectedInstance, propertyName, globalInstanceData);
         
-        // Add variant options with the first one pre-selected
+        // Add "Keep initial" option if requested
+        if (includeKeepInitial) {
+          const keepInitialOption = document.createElement('option');
+          keepInitialOption.value = 'keep-initial';
+          keepInitialOption.textContent = 'Keep initial';
+          keepInitialOption.selected = true; // Default selected
+          variantsSelect.appendChild(keepInitialOption);
+        }
+        
+        // Add variant options
         variants.forEach((variant, variantIndex) => {
           const option = document.createElement('option');
           option.value = variant;
           option.textContent = variant;
           
-          // Prefill with the first variant
-          if (variantIndex === 0) {
+          // Prefill with the first variant (only if not including keep initial)
+          if (!includeKeepInitial && variantIndex === 0) {
             option.selected = true;
           }
           
@@ -57,7 +85,7 @@ export class PropertyGroupsManager {
         propertyGroupsContainer.appendChild(propertyGroup);
       });
       
-      console.log(`Generated ${propertyNames.length} property groups`);
+      console.log(`Generated ${propertyNames.length} property groups for ${containerId}`);
     }
   }
   
@@ -66,8 +94,14 @@ export class PropertyGroupsManager {
    */
   static clearPropertyGroups(): void {
     const propertyGroupsContainer = document.getElementById('property-groups');
+    const otherPropertyGroupsContainer = document.getElementById('property-groups-others');
+    
     if (propertyGroupsContainer) {
       propertyGroupsContainer.innerHTML = '';
+    }
+    
+    if (otherPropertyGroupsContainer) {
+      otherPropertyGroupsContainer.innerHTML = '';
     }
   }
 } 

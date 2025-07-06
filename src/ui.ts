@@ -22,8 +22,9 @@ function handleSecondInstanceChange(event: Event) {
     const selectedInstance = globalInstanceData.find(instance => instance.instanceName === selectedInstanceName);
     
     if (selectedInstance) {
-      // Generate property groups
+      // Generate property groups for both sections
       PropertyGroupsManager.generatePropertyGroups(selectedInstance, globalInstanceData);
+      PropertyGroupsManager.generateOtherPropertyGroups(selectedInstance, globalInstanceData);
       
       console.log(`Generated property groups for instance: ${selectedInstanceName}`);
     }
