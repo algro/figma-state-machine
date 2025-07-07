@@ -3,12 +3,12 @@ import { PropertiesUtil } from './utils/properties-util';
 import { PluginInteractionHandler } from './utils/plugin-interaction-handler';
 
 export default function () {
-	figma.showUI(__html__, { width: 400, height: 600, themeColors: true })
+	figma.showUI(__html__, { width: 400, height: 500, themeColors: true })
 	
 	// Function to process and send instance properties
-	function processAndSendProperties() {
+	async function processAndSendProperties() {
 		let selection = figma.currentPage.selection;
-		let instanceProperties = PropertiesUtil.processCurrentSelection();
+		let instanceProperties = await PropertiesUtil.processCurrentSelection();
 		
 
 		

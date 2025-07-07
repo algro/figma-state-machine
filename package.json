@@ -16,10 +16,11 @@
 	},
 	"plugma": {
 		"manifest": {
-			"id": "state-machine-replace",
+			"id": "1524080534083931956",
 			"name": "state-machine",
 			"main": "src/main.ts",
 			"ui": "src/ui.ts",
+			"documentAccess": "dynamic-page",
 			"editorType": [
 				"figma",
 				"figjam"

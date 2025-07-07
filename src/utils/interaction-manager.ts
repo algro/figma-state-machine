@@ -1,3 +1,4 @@
+
 // Interaction Manager - Handles variable collection and click reactions setup
 
 export class InteractionManager {
@@ -9,14 +10,12 @@ export class InteractionManager {
     firstInstanceName: string,
     secondInstanceName: string,
     firstPropertyGroups: any[],
-    otherPropertyGroups: any[],
-    exclusiveMode: boolean = false
+    otherPropertyGroups: any[]
   ): Promise<void> {
     try {
       // Set up click reactions using the new unified API
-      // exclusiveMode = true means only one instance per state (toggle behavior)
-      // exclusiveMode = false means multiple instances allowed
-      await this.setupClickReactions(firstInstanceName, secondInstanceName, firstPropertyGroups, otherPropertyGroups, exclusiveMode);
+      // Radio behavior: only one instance per state
+      await this.setupClickReactions(firstInstanceName, secondInstanceName, firstPropertyGroups, otherPropertyGroups);
       
       
       
@@ -33,8 +32,7 @@ export class InteractionManager {
     firstInstanceName: string, 
     secondInstanceName: string,
     firstPropertyGroups: any[], 
-    otherPropertyGroups: any[],
-    exclusiveMode: boolean = false
+    otherPropertyGroups: any[]
   ): Promise<void> {
     return new Promise((resolve, reject) => {
       const messageId = Date.now().toString();
@@ -60,8 +58,7 @@ export class InteractionManager {
           firstInstanceName: firstInstanceName,
           secondInstanceName: secondInstanceName,
           firstPropertyGroups: firstPropertyGroups,
-          otherPropertyGroups: otherPropertyGroups,
-          exclusiveMode: exclusiveMode
+          otherPropertyGroups: otherPropertyGroups
         }
       }, '*');
     });

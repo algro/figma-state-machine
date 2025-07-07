@@ -66,23 +66,16 @@ function handleAddInteractionClick() {
     return;
   }
   
-  // Get allow multiple state
-  const allowMultipleCheckbox = document.getElementById('allow-multiple') as HTMLInputElement;
-  const allowMultiple = allowMultipleCheckbox ? allowMultipleCheckbox.checked : false;
-  
-  console.log('Allow multiple instances enabled:', allowMultiple);
+  console.log('Setting up radio behavior interactions');
   
   // The propertyGroups are for the clicked instance (first property groups)
   // The otherPropertyGroups are for "other" instances of the same component
   // Both are for the same instance type (secondInstance), but different behaviors
   
-  // Set up the interactions
-  InteractionManager.setupClickInteractions(firstInstance, secondInstance, propertyGroups, otherPropertyGroups, !allowMultiple)
+  // Set up the interactions with radio behavior
+  InteractionManager.setupClickInteractions(firstInstance, secondInstance, propertyGroups, otherPropertyGroups)
     .then(() => {
-      const message = allowMultiple 
-        ? 'Click interactions setup completed successfully! (Multiple instances allowed)' 
-        : 'Click interactions setup completed successfully! (Only one instance per state)';
-      NotificationHandler.show(message, 'success');
+      NotificationHandler.show('Click interactions setup completed successfully! (Radio behavior enabled)', 'success');
     })
     .catch((error) => {
       console.error('Failed to setup interactions:', error);

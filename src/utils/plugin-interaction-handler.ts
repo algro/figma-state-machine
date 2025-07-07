@@ -118,16 +118,17 @@ export class PluginInteractionHandler {
   /**
    * Get property definition for a given property name
    */
-  private static getPropertyDefinition(instance: any, propertyName: string): any {
+  private static async getPropertyDefinition(instance: any, propertyName: string): Promise<any> {
     console.log(`Getting property definition for ${propertyName} on instance: ${instance.name}`);
-    console.log(`Instance mainComponent:`, instance.mainComponent);
+    const mainComponent = await instance.getMainComponentAsync();
+    console.log(`Instance mainComponent:`, mainComponent);
     
     try {
       // First, try to get from parent component set if main component is a variant
-      if (instance.mainComponent && instance.mainComponent.parent && 
-          instance.mainComponent.parent.type === 'COMPONENT_SET') {
+      if (mainComponent && mainComponent.parent && 
+          mainComponent.parent.type === 'COMPONENT_SET') {
         try {
-          const definitions = (instance.mainComponent.parent as any).componentPropertyDefinitions;
+          const definitions = (mainComponent.parent as any).componentPropertyDefinitions;
           console.log(`Found definitions in parent component set:`, definitions);
           const definition = definitions[propertyName];
           console.log(`Property definition for ${propertyName}:`, definition);
@@ -138,9 +139,9 @@ export class PluginInteractionHandler {
       }
       
       // Then try to get property definition from the instance's main component (only if it's not a variant)
-      if (instance.mainComponent && instance.mainComponent.type !== 'COMPONENT') {
+      if (mainComponent && mainComponent.type !== 'COMPONENT') {
         try {
-          const definitions = (instance.mainComponent as any).componentPropertyDefinitions;
+          const definitions = (mainComponent as any).componentPropertyDefinitions;
           console.log(`Found definitions in mainComponent:`, definitions);
           const definition = definitions[propertyName];
           console.log(`Property definition for ${propertyName}:`, definition);
@@ -163,10 +164,10 @@ export class PluginInteractionHandler {
   /**
    * Get the default (first) variant for a property
    */
-  private static getDefaultVariantForProperty(instance: any, propertyName: string): string | null {
+  private static async getDefaultVariantForProperty(instance: any, propertyName: string): Promise<string | null> {
     console.log(`Getting default variant for property ${propertyName} on instance: ${instance.name}`);
     
-    const propertyDefinition = this.getPropertyDefinition(instance, propertyName);
+    const propertyDefinition = await this.getPropertyDefinition(instance, propertyName);
     if (!propertyDefinition) {
       console.log(`No property definition found for ${propertyName}`);
       return null;
@@ -342,15 +343,14 @@ export class PluginInteractionHandler {
     firstInstanceName: string, 
     secondInstanceName: string,
     firstPropertyGroups: any[], 
-    otherPropertyGroups: any[],
-    exclusiveMode: boolean = false
+    otherPropertyGroups: any[]
   ): Promise<void> {
     console.log('=== SETUP CLICK REACTIONS START ===');
     console.log('First instance name:', firstInstanceName);
     console.log('Second instance name:', secondInstanceName);
     console.log('First property groups:', firstPropertyGroups);
     console.log('Other property groups:', otherPropertyGroups);
-    console.log('Exclusive mode:', exclusiveMode);
+    console.log('Radio behavior mode enabled');
     
     // Find instances of the second type within the current selection context
     const instances = this.findInstancesInSelectionContext(secondInstanceName);
@@ -378,9 +378,7 @@ export class PluginInteractionHandler {
     const variableCollection = this.findOrCreateVariableCollection('State Machine Variables');
     console.log('Variable collection:', variableCollection.name, variableCollection.id);
     
-    // STEP 2: Capture original state of all instances for toggle functionality
-    const originalStates = this.captureOriginalStates(validInstances, firstPropertyGroups);
-    console.log('Captured original states:', originalStates);
+
     
     // STEP 3: Create individual variables for each instance
     const allInstanceVariables = this.createIndividualInstanceVariables(
@@ -418,9 +416,7 @@ export class PluginInteractionHandler {
         allInstanceVariables,
         firstPropertyGroups,
         otherPropertyGroups,
-        validInstances,
-        exclusiveMode,
-        originalStates
+        validInstances
       );
     }
     
@@ -433,28 +429,7 @@ export class PluginInteractionHandler {
     console.log('=== SETUP CLICK REACTIONS END ===');
   }
   
-  /**
-   * Capture the original state of all instances for toggle functionality
-   */
-  private static captureOriginalStates(instances: any[], firstPropertyGroups: any[]): { [instanceId: string]: { [propertyName: string]: any } } {
-    const originalStates: { [instanceId: string]: { [propertyName: string]: any } } = {};
-    
-    instances.forEach((instance, instanceIndex) => {
-      originalStates[instance.id] = {};
-      
-      firstPropertyGroups.forEach((propertyGroup) => {
-        const propertyName = propertyGroup.propertyName;
-        if (instance.componentProperties && instance.componentProperties[propertyName]) {
-          const currentProperty = instance.componentProperties[propertyName];
-          const currentValue = currentProperty.value || currentProperty;
-          originalStates[instance.id][propertyName] = currentValue;
-          console.log(`Captured original state for instance ${instance.name}, property ${propertyName}: ${currentValue}`);
-        }
-      });
-    });
-    
-    return originalStates;
-  }
+
   
   /**
    * Create a destination frame for the prototype interaction
@@ -491,9 +466,7 @@ export class PluginInteractionHandler {
     allInstanceVariables: any[],
     firstPropertyGroups: any[],
     otherPropertyGroups: any[],
-    allInstances: any[],
-    exclusiveMode: boolean = false,
-    originalStates: { [instanceId: string]: { [propertyName: string]: any } } = {}
+    allInstances: any[]
   ): Promise<void> {
     try {
       console.log(`=== CREATE PROTOTYPE INTERACTION DEBUG ===`);
@@ -511,7 +484,7 @@ export class PluginInteractionHandler {
       console.log(`Current instance index: ${currentInstanceIndex}`);
       
       // Create SET_VARIABLE actions for all instances and their properties
-      allInstanceVariables.forEach((variable: any) => {
+      for (const variable of allInstanceVariables) {
         // Extract instance name, property, and instance index from variable name
         const variableNameParts = variable.name.split('_');
         const instanceName = variableNameParts[0];
@@ -525,104 +498,64 @@ export class PluginInteractionHandler {
         
         // Check if this is the clicked instance
         if (variableInstanceIndex === currentInstanceIndex) {
-          // "Set" section: Set variables for the clicked instance
+          // "Set clicked instance to" section: Set variables for the clicked instance
           const firstPropertyGroup = firstPropertyGroups.find((pg: any) => pg.propertyName === propertyName);
           if (firstPropertyGroup) {
             const clickedInstance = allInstances[currentInstanceIndex];
-            const currentProperty = clickedInstance.componentProperties[propertyName];
-            const currentValue = currentProperty.value || currentProperty;
             const targetState = firstPropertyGroup.selectedVariant;
             
-                         if (!exclusiveMode) {
-               // Allow multiple mode: Check if we need to toggle
-               if (currentValue === targetState) {
-                 // Instance is already in target state, toggle it back to original state
-                 const originalState = originalStates[clickedInstance.id] && originalStates[clickedInstance.id][propertyName];
-                 if (originalState !== undefined) {
-                   targetValue = originalState;
-                   console.log(`Allow multiple mode: Toggling clicked instance from ${currentValue} back to original state: ${targetValue}`);
-                 } else {
-                   // Fallback to default if original state not captured
-                   const defaultValue = this.getDefaultVariantForProperty(clickedInstance, propertyName);
-                   targetValue = defaultValue;
-                   console.log(`Allow multiple mode: Toggling clicked instance from ${currentValue} to default (original state not found): ${targetValue}`);
-                 }
-               } else {
-                 // Instance is not in target state, set it to target
-                 targetValue = targetState;
-                 console.log(`Allow multiple mode: Setting clicked instance to target state: ${variable.name} = ${targetValue}`);
-               }
-            } else {
-              // Exclusive mode: Always set to target state
-              targetValue = targetState;
-              console.log(`Setting clicked instance variable: ${variable.name} = ${targetValue}`);
-            }
-            
+            // Radio behavior: Always set clicked instance to target state
+            targetValue = targetState;
+            console.log(`Setting clicked instance variable: ${variable.name} = ${targetValue}`);
             shouldSetVariable = true;
           }
-                  } else {
-            // "And set other" section: Set variables for all OTHER instances (not the clicked one)
-            if (exclusiveMode) {
-              // In exclusive mode, only reset properties that are actually being set on the clicked instance
-              const clickedInstancePropertyGroup = firstPropertyGroups.find((pg: any) => pg.propertyName === propertyName);
+        } else {
+          // "And set all other instances to" section: Set variables for all OTHER instances (not the clicked one)
+          const clickedInstancePropertyGroup = firstPropertyGroups.find((pg: any) => pg.propertyName === propertyName);
+          
+          // Only process this property if it's actually being set on the clicked instance
+          if (clickedInstancePropertyGroup) {
+            const targetInstance = allInstances[variableInstanceIndex];
+            if (targetInstance && targetInstance.componentProperties && targetInstance.componentProperties[propertyName]) {
+              const currentProperty = targetInstance.componentProperties[propertyName];
+              const currentValue = currentProperty.value || currentProperty;
+              const clickedInstanceTargetValue = clickedInstancePropertyGroup.selectedVariant;
               
-              // Only process this property if it's actually being set on the clicked instance
-              if (clickedInstancePropertyGroup) {
-                const targetInstance = allInstances[variableInstanceIndex];
-                if (targetInstance && targetInstance.componentProperties && targetInstance.componentProperties[propertyName]) {
-                  const currentProperty = targetInstance.componentProperties[propertyName];
-                  const currentValue = currentProperty.value || currentProperty;
-                  const clickedInstanceTargetValue = clickedInstancePropertyGroup.selectedVariant;
-                  
-                  // Only reset THIS property if it currently has the same value that the clicked instance will be set to
-                  if (currentValue === clickedInstanceTargetValue) {
-                    // Use "And set other" configuration, but ignore "keep-initial" for resets
-                    const otherPropertyGroup = otherPropertyGroups.find((pg: any) => pg.propertyName === propertyName);
-                    if (otherPropertyGroup && otherPropertyGroup.selectedVariant !== 'keep-initial') {
-                      targetValue = otherPropertyGroup.selectedVariant;
-                      shouldSetVariable = true;
-                      console.log(`Exclusive mode: Resetting conflicting property ${propertyName} to "And set other" value: ${variable.name} = ${targetValue} (was ${currentValue})`);
-                    } else {
-                      // Use default value when "keep-initial" is set or no config exists
-                      const defaultValue = this.getDefaultVariantForProperty(targetInstance, propertyName);
-                      if (defaultValue) {
-                        targetValue = defaultValue;
-                        shouldSetVariable = true;
-                        console.log(`Exclusive mode: Resetting conflicting property ${propertyName} to default (ignoring "keep-initial"): ${variable.name} = ${targetValue} (was ${currentValue})`);
-                      }
-                    }
-                  } else {
-                    // Keep the current value for this property - don't change it
-                    targetValue = currentValue;
+              // Only reset THIS property if it currently has the same value that the clicked instance will be set to
+              if (currentValue === clickedInstanceTargetValue) {
+                // Use "And set all other instances to" configuration, but ignore "keep-initial" for resets
+                const otherPropertyGroup = otherPropertyGroups.find((pg: any) => pg.propertyName === propertyName);
+                if (otherPropertyGroup && otherPropertyGroup.selectedVariant !== 'keep-initial') {
+                  targetValue = otherPropertyGroup.selectedVariant;
+                  shouldSetVariable = true;
+                  console.log(`Radio behavior: Resetting conflicting property ${propertyName} to "other instances" value: ${variable.name} = ${targetValue} (was ${currentValue})`);
+                } else {
+                  // Use default value when "keep-initial" is set or no config exists
+                  const defaultValue = await this.getDefaultVariantForProperty(targetInstance, propertyName);
+                  if (defaultValue) {
+                    targetValue = defaultValue;
                     shouldSetVariable = true;
-                    console.log(`Exclusive mode: Keeping property ${propertyName} unchanged: ${variable.name} = ${targetValue}`);
+                    console.log(`Radio behavior: Resetting conflicting property ${propertyName} to default (ignoring "keep-initial"): ${variable.name} = ${targetValue} (was ${currentValue})`);
                   }
                 }
               } else {
-                // This property is not being set on the clicked instance, so keep it unchanged
-                const targetInstance = allInstances[variableInstanceIndex];
-                if (targetInstance && targetInstance.componentProperties && targetInstance.componentProperties[propertyName]) {
-                  const currentProperty = targetInstance.componentProperties[propertyName];
-                  targetValue = currentProperty.value || currentProperty;
-                  shouldSetVariable = true;
-                  console.log(`Exclusive mode: Property ${propertyName} not being set, keeping unchanged: ${variable.name} = ${targetValue}`);
-                }
-              }
-            } else {
-              // Allow multiple mode: Apply "And set other" configuration to set baseline state
-              const otherPropertyGroup = otherPropertyGroups.find((pg: any) => pg.propertyName === propertyName);
-              if (otherPropertyGroup && otherPropertyGroup.selectedVariant !== 'keep-initial') {
-                // Set to the specified "And set other" value
-                targetValue = otherPropertyGroup.selectedVariant;
+                // Keep the current value for this property - don't change it
+                targetValue = currentValue;
                 shouldSetVariable = true;
-                console.log(`Allow multiple mode: Setting other instance to "And set other" value: ${variable.name} = ${targetValue}`);
-              } else {
-                // "Keep initial" or no config - don't touch other instances
-                console.log(`Allow multiple mode: Skipping other instance ${variableInstanceIndex} - keeping its current state unchanged`);
-                shouldSetVariable = false; // Don't set any variables for other instances
+                console.log(`Radio behavior: Keeping property ${propertyName} unchanged: ${variable.name} = ${targetValue}`);
               }
             }
+          } else {
+            // This property is not being set on the clicked instance, so keep it unchanged
+            const targetInstance = allInstances[variableInstanceIndex];
+            if (targetInstance && targetInstance.componentProperties && targetInstance.componentProperties[propertyName]) {
+              const currentProperty = targetInstance.componentProperties[propertyName];
+              targetValue = currentProperty.value || currentProperty;
+              shouldSetVariable = true;
+              console.log(`Radio behavior: Property ${propertyName} not being set, keeping unchanged: ${variable.name} = ${targetValue}`);
+            }
           }
+        }
         
         if (shouldSetVariable && targetValue !== null) {
           // Get the variable type and convert the value accordingly
@@ -647,7 +580,7 @@ export class PluginInteractionHandler {
           });
           console.log(`Added SET_VARIABLE action for ${variable.name} = ${convertedValue} (type: ${variableType})`);
         }
-      });
+      }
       
       console.log(`Created ${actions.length} SET_VARIABLE actions for instance ${currentInstanceIndex}`);
       
@@ -961,8 +894,7 @@ export class PluginInteractionHandler {
             message.firstInstanceName,
             message.secondInstanceName,
             message.firstPropertyGroups || [],
-            message.otherPropertyGroups || [],
-            message.exclusiveMode || false
+            message.otherPropertyGroups || []
           );
           return {
             success: true,

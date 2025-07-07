@@ -54,11 +54,11 @@ export class PropertiesUtil {
    * If multiple instances have the same main component, only return one
    * Also filters out instances with no properties
    */
-  static getUniqueInstances(instances: InstanceNode[]): InstanceNode[] {
+  static async getUniqueInstances(instances: InstanceNode[]): Promise<InstanceNode[]> {
     const uniqueMap = new Map<string | null, InstanceNode>();
     
     for (const instance of instances) {
-      const mainComponent = instance.mainComponent;
+      const mainComponent = await instance.getMainComponentAsync();
       
       // Skip instances with no properties or broken component sets
       let properties: any = {};
@@ -110,8 +110,8 @@ export class PropertiesUtil {
   /**
    * Extract properties from an instance node
    */
-  static getInstanceProperties(instance: InstanceNode): InstancePropertyData {
-    const mainComponent = instance.mainComponent;
+  static async getInstanceProperties(instance: InstanceNode): Promise<InstancePropertyData> {
+    const mainComponent = await instance.getMainComponentAsync();
     const parentPath = this.getInstancePath(instance);
     
     // Convert componentProperties to our interface format
@@ -187,7 +187,7 @@ export class PropertiesUtil {
   /**
    * Main function to process instance properties from selected nodes
    */
-  static processInstanceProperties(nodes: SceneNode[]): InstancePropertyData[] {
+  static async processInstanceProperties(nodes: SceneNode[]): Promise<InstancePropertyData[]> {
     
     
     // Find all instances in the selected nodes
@@ -199,13 +199,13 @@ export class PropertiesUtil {
     
     
     // Get unique instances based on main component
-    const uniqueInstances = this.getUniqueInstances(allInstances);
+    const uniqueInstances = await this.getUniqueInstances(allInstances);
     
     
     // Extract properties for each unique instance
     const instanceData: InstancePropertyData[] = [];
     for (const instance of uniqueInstances) {
-      const data = this.getInstanceProperties(instance);
+      const data = await this.getInstanceProperties(instance);
       instanceData.push(data);
       
       
@@ -217,7 +217,7 @@ export class PropertiesUtil {
   /**
    * Process instances from current selection
    */
-  static processCurrentSelection(): InstancePropertyData[] {
+  static async processCurrentSelection(): Promise<InstancePropertyData[]> {
     const selection = figma.currentPage.selection;
     
     if (selection.length === 0) {
@@ -225,13 +225,13 @@ export class PropertiesUtil {
       return [];
     }
     
-    return this.processInstanceProperties(Array.from(selection));
+    return await this.processInstanceProperties(Array.from(selection));
   }
   
   /**
    * Get properties for a single instance node
    */
-  static getSingleInstanceProperties(instance: InstanceNode): InstancePropertyData {
-    return this.getInstanceProperties(instance);
+  static async getSingleInstanceProperties(instance: InstanceNode): Promise<InstancePropertyData> {
+    return await this.getInstanceProperties(instance);
   }
 } 
