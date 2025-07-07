@@ -45,16 +45,33 @@ export class PluginInteractionHandler {
       
       // Create variables for "Set" properties (first property groups)
       firstPropertyGroups.forEach((propertyGroup) => {
-        const { propertyName, selectedVariant } = propertyGroup;
-        const variableName = `${instance.name}_${propertyName}_${instanceIndex}`;
+        const { propertyName } = propertyGroup;
         
-        // Get property definition to determine variable type
-        const propertyDefinition = this.getPropertyDefinition(instance, propertyName);
-        const variableType = this.determineVariableType(propertyDefinition, selectedVariant);
-        
-        const variable = this.findOrCreateVariable(variableCollection, variableName, selectedVariant, variableType);
-        allVariables.push(variable);
-        console.log(`Created variable: ${variableName} = ${selectedVariant} (type: ${variableType})`);
+        // Only create variable if the property exists on this instance
+        if (instance.componentProperties && instance.componentProperties[propertyName]) {
+          const variableName = `${instance.name}_${propertyName}_${instanceIndex}`;
+          
+          // Get the current value of this property on this instance
+          const currentProperty = instance.componentProperties[propertyName];
+          const currentValue = currentProperty && typeof currentProperty === 'object' && 'value' in currentProperty 
+            ? currentProperty.value 
+            : currentProperty;
+          
+          // Get property definition to determine variable type
+          const propertyDefinition = this.getPropertyDefinition(instance, propertyName);
+          let variableType = this.determineVariableType(propertyDefinition, String(currentValue));
+          // For VARIANT properties, always use STRING
+          if (propertyDefinition && propertyDefinition.type === 'VARIANT') {
+            variableType = 'STRING';
+          }
+          
+          console.log(`Creating variable for ${propertyName} with current value: ${currentValue} (type: ${variableType})`);
+          const variable = this.findOrCreateVariable(variableCollection, variableName, String(currentValue), variableType);
+          allVariables.push(variable);
+          console.log(`Created variable: ${variableName} = ${currentValue} (type: ${variableType})`);
+        } else {
+          console.log(`Skipping variable for ${propertyName} - property not found on instance ${instance.name}`);
+        }
       });
       
       // Create variables for "And set other" properties (other property groups)
@@ -62,15 +79,31 @@ export class PluginInteractionHandler {
         const { propertyName, selectedVariant } = propertyGroup;
         
         if (selectedVariant !== 'keep-initial') {
-          const variableName = `${instance.name}_${propertyName}_${instanceIndex}`;
-          
-          // Get property definition to determine variable type
-          const propertyDefinition = this.getPropertyDefinition(instance, propertyName);
-          const variableType = this.determineVariableType(propertyDefinition, selectedVariant);
-          
-          const variable = this.findOrCreateVariable(variableCollection, variableName, selectedVariant, variableType);
-          allVariables.push(variable);
-          console.log(`Created variable: ${variableName} = ${selectedVariant} (type: ${variableType})`);
+          // Only create variable if the property exists on this instance
+          if (instance.componentProperties && instance.componentProperties[propertyName]) {
+            const variableName = `${instance.name}_${propertyName}_${instanceIndex}`;
+            
+            // Get the current value of this property on this instance
+            const currentProperty = instance.componentProperties[propertyName];
+            const currentValue = currentProperty && typeof currentProperty === 'object' && 'value' in currentProperty 
+              ? currentProperty.value 
+              : currentProperty;
+            
+            // Get property definition to determine variable type
+            const propertyDefinition = this.getPropertyDefinition(instance, propertyName);
+            let variableType = this.determineVariableType(propertyDefinition, String(currentValue));
+            // For VARIANT properties, always use STRING
+            if (propertyDefinition && propertyDefinition.type === 'VARIANT') {
+              variableType = 'STRING';
+            }
+            
+            console.log(`Creating variable for ${propertyName} with current value: ${currentValue} (type: ${variableType})`);
+            const variable = this.findOrCreateVariable(variableCollection, variableName, String(currentValue), variableType);
+            allVariables.push(variable);
+            console.log(`Created variable: ${variableName} = ${currentValue} (type: ${variableType})`);
+          } else {
+            console.log(`Skipping variable for ${propertyName} - property not found on instance ${instance.name}`);
+          }
         } else {
           console.log(`Skipping variable for ${instance.name}_${propertyName}_${instanceIndex} (keep-initial)`);
         }
@@ -86,40 +119,85 @@ export class PluginInteractionHandler {
    * Get property definition for a given property name
    */
   private static getPropertyDefinition(instance: any, propertyName: string): any {
-    // Try to get property definition from the instance's main component
-    if (instance.mainComponent && 'componentPropertyDefinitions' in instance.mainComponent) {
-      const definitions = (instance.mainComponent as any).componentPropertyDefinitions;
-      return definitions[propertyName];
-    }
+    console.log(`Getting property definition for ${propertyName} on instance: ${instance.name}`);
+    console.log(`Instance mainComponent:`, instance.mainComponent);
     
-    // Try to get from parent component set if main component is a variant
-    if (instance.mainComponent && instance.mainComponent.parent && 
-        instance.mainComponent.parent.type === 'COMPONENT_SET' &&
-        'componentPropertyDefinitions' in instance.mainComponent.parent) {
-      const definitions = (instance.mainComponent.parent as any).componentPropertyDefinitions;
-      return definitions[propertyName];
+    try {
+      // First, try to get from parent component set if main component is a variant
+      if (instance.mainComponent && instance.mainComponent.parent && 
+          instance.mainComponent.parent.type === 'COMPONENT_SET') {
+        try {
+          const definitions = (instance.mainComponent.parent as any).componentPropertyDefinitions;
+          console.log(`Found definitions in parent component set:`, definitions);
+          const definition = definitions[propertyName];
+          console.log(`Property definition for ${propertyName}:`, definition);
+          return definition;
+        } catch (error) {
+          console.log(`Could not get definitions from parent component set:`, error);
+        }
+      }
+      
+      // Then try to get property definition from the instance's main component (only if it's not a variant)
+      if (instance.mainComponent && instance.mainComponent.type !== 'COMPONENT') {
+        try {
+          const definitions = (instance.mainComponent as any).componentPropertyDefinitions;
+          console.log(`Found definitions in mainComponent:`, definitions);
+          const definition = definitions[propertyName];
+          console.log(`Property definition for ${propertyName}:`, definition);
+          return definition;
+        } catch (error) {
+          console.log(`Could not get definitions from mainComponent:`, error);
+        }
+      }
+      
+      console.log(`No property definition found for ${propertyName}`);
+      return null;
+    } catch (error) {
+      console.log(`Error getting property definition:`, error);
+      return null;
     }
-    
-    return null;
   }
   
   /**
    * Determine the correct variable type based on property definition and value
    */
   private static determineVariableType(propertyDefinition: any, value: string): 'STRING' | 'BOOLEAN' {
+    console.log(`Determining variable type for value: "${value}"`);
+    console.log(`Property definition:`, propertyDefinition);
+    
     if (propertyDefinition) {
       // Check the property definition type
       if (propertyDefinition.type === 'BOOLEAN') {
+        console.log(`Property is explicitly BOOLEAN type`);
         return 'BOOLEAN';
+      }
+      
+      // Check if it's a variant property with boolean-like options
+      if (propertyDefinition.type === 'VARIANT' && propertyDefinition.variantOptions) {
+        const variantOptions = propertyDefinition.variantOptions;
+        console.log(`Variant options:`, variantOptions);
+        
+        // Check if all variant options are boolean-like
+        const booleanLikeOptions = ['Yes', 'No', 'True', 'False', 'true', 'false', 'yes', 'no'];
+        const allBooleanLike = variantOptions.every((option: string) => 
+          booleanLikeOptions.includes(option)
+        );
+        
+        if (allBooleanLike) {
+          console.log(`All variant options are boolean-like, treating as BOOLEAN`);
+          return 'BOOLEAN';
+        }
       }
     }
     
     // Fallback: check the value itself
-    if (value === 'true' || value === 'false') {
+    const booleanValues = ['true', 'false', 'yes', 'no', 'True', 'False', 'Yes', 'No'];
+    if (booleanValues.includes(value)) {
+      console.log(`Value "${value}" is boolean-like, treating as BOOLEAN`);
       return 'BOOLEAN';
     }
     
-    // Default to string (Figma doesn't support NUMBER type for variables)
+    console.log(`Defaulting to STRING type`);
     return 'STRING';
   }
   
@@ -147,7 +225,10 @@ export class PluginInteractionHandler {
     // Set the initial value with proper type conversion
     let convertedValue: any = value;
     if (variableType === 'BOOLEAN') {
-      convertedValue = value === 'true';
+      // Convert various boolean-like values to actual boolean
+      const trueValues = ['true', 'True', 'yes', 'Yes'];
+      convertedValue = trueValues.includes(value);
+      console.log(`Converted "${value}" to boolean: ${convertedValue}`);
     }
     
     newVariable.setValueForMode(variableCollection.defaultModeId, convertedValue);
@@ -232,11 +313,11 @@ export class PluginInteractionHandler {
       throw new Error(`No instances found with name: ${secondInstanceName} in the current selection context`);
     }
     
-    // Create a variable collection for all state variables
+    // STEP 1: Create a variable collection for all state variables
     const variableCollection = this.findOrCreateVariableCollection('State Machine Variables');
     console.log('Variable collection:', variableCollection.name, variableCollection.id);
     
-    // Create individual variables for each instance
+    // STEP 2: Create individual variables for each instance
     const allInstanceVariables = this.createIndividualInstanceVariables(
       variableCollection, 
       instances, 
@@ -245,11 +326,25 @@ export class PluginInteractionHandler {
     );
     console.log('Created variables for all instances:', allInstanceVariables);
     
-    // Create a destination frame for navigation
+    // STEP 3: Set up variable bindings FIRST (before creating interactions)
+    console.log('=== SETTING UP VARIABLE BINDINGS ===');
+    
+    // Small delay to ensure variables are fully created
+    await new Promise(resolve => setTimeout(resolve, 100));
+    
+    for (let i = 0; i < instances.length; i++) {
+      const instance = instances[i];
+      console.log(`Setting up variable bindings for instance: ${instance.name}`);
+      await this.setupVariableBinding(instance, allInstanceVariables, i);
+    }
+    console.log('=== VARIABLE BINDINGS COMPLETE ===');
+    
+    // STEP 4: Create a destination frame for navigation
     const destinationFrame = this.createDestinationFrame(secondInstanceName);
     console.log('Destination frame:', destinationFrame.name, destinationFrame.id);
     
-    // Set up prototype interactions for each instance
+    // STEP 5: Set up prototype interactions for each instance (AFTER variable binding)
+    console.log('=== SETTING UP PROTOTYPE INTERACTIONS ===');
     for (const instance of instances) {
       console.log(`Setting up interaction for instance: ${instance.name}`);
       await this.createPrototypeInteraction(
@@ -262,14 +357,12 @@ export class PluginInteractionHandler {
       );
     }
     
-    // Set up variable bindings for all instances
-    for (const instance of instances) {
-      console.log(`Setting up variable bindings for instance: ${instance.name}`);
-      this.setupVariableBinding(instance, allInstanceVariables);
-    }
-    
     console.log(`Set up prototype interactions for ${instances.length} instances of type: ${secondInstanceName}`);
     console.log(`Set up variable bindings for all instances`);
+    
+    // Notify Figma UI to refresh and show the variable bindings
+    console.log('Notifying UI to refresh variable bindings...');
+    
     console.log('=== SETUP CLICK REACTIONS END ===');
   }
   
@@ -338,35 +431,62 @@ export class PluginInteractionHandler {
         let targetValue = null;
         let shouldSetVariable = false;
         
-        // "Set" section: Only set variables for the clicked instance
-        const firstPropertyGroup = firstPropertyGroups.find((pg: any) => pg.propertyName === propertyName);
-        if (firstPropertyGroup && variableInstanceIndex === currentInstanceIndex) {
-          targetValue = firstPropertyGroup.selectedVariant;
-          shouldSetVariable = true;
-          console.log(`Setting clicked instance variable: ${variable.name} = ${targetValue}`);
+        // Check if this is the clicked instance
+        if (variableInstanceIndex === currentInstanceIndex) {
+          // "Set" section: Set variables for the clicked instance
+          const firstPropertyGroup = firstPropertyGroups.find((pg: any) => pg.propertyName === propertyName);
+          if (firstPropertyGroup) {
+            targetValue = firstPropertyGroup.selectedVariant;
+            shouldSetVariable = true;
+            console.log(`Setting clicked instance variable: ${variable.name} = ${targetValue}`);
+          }
+        } else {
+          // "And set other" section: Set variables for all OTHER instances (not the clicked one)
+          const otherPropertyGroup = otherPropertyGroups.find((pg: any) => pg.propertyName === propertyName);
+          if (otherPropertyGroup) {
+            if (otherPropertyGroup.selectedVariant === 'keep-initial') {
+              // Get the current value from the instance
+              const targetInstance = allInstances[variableInstanceIndex];
+              if (targetInstance && targetInstance.componentProperties && targetInstance.componentProperties[propertyName]) {
+                const currentProperty = targetInstance.componentProperties[propertyName];
+                targetValue = currentProperty.value;
+                shouldSetVariable = true;
+                console.log(`Setting other instance to keep initial: ${variable.name} = ${targetValue} (current value)`);
+              }
+            } else {
+              targetValue = otherPropertyGroup.selectedVariant;
+              shouldSetVariable = true;
+              console.log(`Setting other instance variable: ${variable.name} = ${targetValue}`);
+            }
+          }
         }
         
-        // "And set other" section: Set variables for all OTHER instances (not the clicked one)
-        const otherPropertyGroup = otherPropertyGroups.find((pg: any) => pg.propertyName === propertyName);
-        if (otherPropertyGroup && otherPropertyGroup.selectedVariant !== 'keep-initial' && variableInstanceIndex !== currentInstanceIndex) {
-          targetValue = otherPropertyGroup.selectedVariant;
-          shouldSetVariable = true;
-          console.log(`Setting other instance variable: ${variable.name} = ${targetValue}`);
-        }
-        
-        if (shouldSetVariable && targetValue) {
+        if (shouldSetVariable && targetValue !== null) {
+          // Get the variable type and convert the value accordingly
+          const variableType = variable.resolvedType || 'STRING';
+          let convertedValue = targetValue;
+          
+          if (variableType === 'BOOLEAN') {
+            // Convert string values to boolean
+            const trueValues = ['true', 'True', 'yes', 'Yes'];
+            convertedValue = trueValues.includes(targetValue);
+            console.log(`Converting "${targetValue}" to boolean: ${convertedValue}`);
+          }
+          
           actions.push({
             type: 'SET_VARIABLE',
             variableId: variable.id,
             variableValue: {
-              resolvedType: 'STRING',
-              type: 'STRING',
-              value: targetValue
+              resolvedType: variableType,
+              type: variableType,
+              value: convertedValue
             }
           });
-          console.log(`Added SET_VARIABLE action for ${variable.name} = ${targetValue}`);
+          console.log(`Added SET_VARIABLE action for ${variable.name} = ${convertedValue} (type: ${variableType})`);
         }
       });
+      
+      console.log(`Created ${actions.length} SET_VARIABLE actions for instance ${currentInstanceIndex}`);
       
       // 3. Navigate to the destination frame (commented out for now - focus on variable setting)
       // actions.push({
@@ -395,15 +515,17 @@ export class PluginInteractionHandler {
       // Try to set the reaction and log any errors
       try {
         // First try with just variable setting to test basic structure
+        const testVariable = allInstanceVariables[0];
+        const testVariableType = testVariable.resolvedType || 'STRING';
         const testReaction = {
           trigger: { type: 'ON_CLICK' },
           actions: [{
             type: 'SET_VARIABLE',
-            variableId: allInstanceVariables[0].id,
+            variableId: testVariable.id,
             variableValue: {
-              resolvedType: 'STRING',
-              type: 'STRING',
-              value: 'Test Value'
+              resolvedType: testVariableType,
+              type: testVariableType,
+              value: testVariableType === 'BOOLEAN' ? true : 'Test Value'
             }
           }]
         };
@@ -456,36 +578,117 @@ export class PluginInteractionHandler {
    * Set up variable binding for an instance
    * This binds instance properties to variables so they update when variables change
    */
-  private static setupVariableBinding(instance: any, variables: any[]): void {
+  private static async setupVariableBinding(instance: any, allInstanceVariables: any[], instanceIndex: number): Promise<void> {
     try {
-      console.log(`Setting up variable binding for instance: ${instance.name}`);
-      console.log(`Instance component properties:`, instance.componentProperties);
-      console.log(`Variables to bind:`, variables.map(v => ({ name: v.name, id: v.id })));
+      console.log(`Setting up variable binding for instance: ${instance.name} (index: ${instanceIndex})`);
+      console.log(`Instance component properties:`, Object.keys(instance.componentProperties || {}));
       
-      // For each variable, try to bind it to the corresponding instance property
-      variables.forEach((variable) => {
-        const propertyName = variable.name.split('_').pop(); // Get property name from variable name
-        console.log(`Looking for property: ${propertyName} in instance ${instance.name}`);
-        
-        if (propertyName && instance.componentProperties) {
-          const property = instance.componentProperties[propertyName];
-          console.log(`Found property:`, property);
-          
-          if (property) {
-            // Bind the variable to the property
-            property.binding = {
-              type: 'VARIABLE',
-              variableId: variable.id
-            };
-            
-            console.log(`Successfully bound variable ${variable.name} to property ${propertyName} on instance ${instance.name}`);
-          } else {
-            console.log(`Property ${propertyName} not found in instance ${instance.name}`);
-          }
-        } else {
-          console.log(`No component properties found for instance ${instance.name} or property name is empty`);
+      // Get the variables that belong to this specific instance
+      const instanceVariables = allInstanceVariables.filter(variable => {
+        const variableNameParts = variable.name.split('_');
+        if (variableNameParts.length >= 3) {
+          const variableInstanceIndex = parseInt(variableNameParts[2]);
+          return variableInstanceIndex === instanceIndex;
         }
+        return false;
       });
+      
+      console.log(`Variables for this instance:`, instanceVariables.map(v => ({ name: v.name, id: v.id })));
+      
+      // Prepare properties object for setProperties
+      const propertiesToSet: { [key: string]: any } = {};
+      
+      // For each property that exists on this instance, bind the corresponding variable
+      if (instance.componentProperties) {
+        for (const [propertyName, property] of Object.entries(instance.componentProperties)) {
+          // Find the variable for this property and this instance
+          const variable = instanceVariables.find(variable => {
+            const variableNameParts = variable.name.split('_');
+            return variableNameParts[1] === propertyName; // Property name is the second part
+          });
+          
+          if (variable) {
+            console.log(`Binding variable ${variable.name} to property ${propertyName}`);
+            
+            // Verify the variable exists and is accessible
+            const verifiedVariable = figma.variables.getVariableById(variable.id);
+            if (!verifiedVariable) {
+              console.error(`Variable ${variable.name} (${variable.id}) not found in Figma variables`);
+              continue;
+            }
+            
+            console.log(`Verified variable: ${verifiedVariable.name} (${verifiedVariable.id})`);
+            
+            // Check the current property value to ensure we're binding the right type
+            const currentProperty = instance.componentProperties[propertyName];
+            const currentValue = currentProperty && typeof currentProperty === 'object' && 'value' in currentProperty 
+              ? currentProperty.value 
+              : currentProperty;
+            
+            console.log(`Current property value for ${propertyName}:`, currentValue);
+            
+            // Verify the variable type matches the property type
+            const variableType = verifiedVariable.resolvedType;
+            console.log(`Variable type: ${variableType}, Current value type: ${typeof currentValue}`);
+            
+            // Only bind if the variable type is compatible with the property
+            if (variableType === 'STRING' || variableType === 'BOOLEAN') {
+              // Use the correct Figma API approach for component properties
+              // Create a variable alias and set it as the property value
+              const variableAlias = figma.variables.createVariableAlias(verifiedVariable);
+              console.log(`Created variable alias for ${propertyName}:`, variableAlias);
+              
+              propertiesToSet[propertyName] = variableAlias;
+            } else {
+              console.error(`Variable type ${variableType} is not compatible with component property ${propertyName}`);
+            }
+          } else {
+            console.log(`No variable found for property ${propertyName} on instance ${instance.name}`);
+          }
+        }
+      }
+      
+      // Apply all property bindings at once using setProperties
+      if (Object.keys(propertiesToSet).length > 0) {
+        console.log(`Setting properties for instance ${instance.name}:`, propertiesToSet);
+        
+        try {
+          // Set the properties using the correct API
+          instance.setProperties(propertiesToSet);
+          console.log(`Successfully bound variables to instance ${instance.name}`);
+          
+          // Verify the bindings were set correctly
+          console.log(`Instance componentProperties after binding:`, instance.componentProperties);
+          
+          // Check if the properties were actually set
+          for (const [propertyName, expectedAlias] of Object.entries(propertiesToSet)) {
+            const actualProperty = instance.componentProperties[propertyName];
+            console.log(`Property ${propertyName}:`, {
+              expected: expectedAlias,
+              actual: actualProperty,
+              isAlias: actualProperty && typeof actualProperty === 'object' && 'type' in actualProperty && actualProperty.type === 'VARIABLE_ALIAS'
+            });
+          }
+          
+        } catch (setPropertiesError) {
+          console.error(`Error setting properties for instance ${instance.name}:`, setPropertiesError);
+          
+          // Try alternative approach: set properties one by one
+          console.log('Trying alternative approach: setting properties one by one');
+          for (const [propertyName, variableAlias] of Object.entries(propertiesToSet)) {
+            try {
+              instance.setProperties({
+                [propertyName]: variableAlias
+              });
+              console.log(`Successfully set property ${propertyName} for instance ${instance.name}`);
+            } catch (singlePropertyError) {
+              console.error(`Error setting property ${propertyName}:`, singlePropertyError);
+            }
+          }
+        }
+      } else {
+        console.log(`No variables to bind for instance ${instance.name}`);
+      }
     } catch (error) {
       console.error(`Error setting up variable binding for ${instance.name}:`, error);
     }
