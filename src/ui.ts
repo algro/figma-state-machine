@@ -66,22 +66,22 @@ function handleAddInteractionClick() {
     return;
   }
   
-  // Get toggle mode state
-  const toggleCheckbox = document.getElementById('toggle-exclusive') as HTMLInputElement;
-  const toggleMode = toggleCheckbox ? toggleCheckbox.checked : false;
+  // Get allow multiple state
+  const allowMultipleCheckbox = document.getElementById('allow-multiple') as HTMLInputElement;
+  const allowMultiple = allowMultipleCheckbox ? allowMultipleCheckbox.checked : false;
   
-  console.log('Toggle mode enabled:', toggleMode);
+  console.log('Allow multiple instances enabled:', allowMultiple);
   
   // The propertyGroups are for the clicked instance (first property groups)
   // The otherPropertyGroups are for "other" instances of the same component
   // Both are for the same instance type (secondInstance), but different behaviors
   
   // Set up the interactions
-  InteractionManager.setupClickInteractions(firstInstance, secondInstance, propertyGroups, otherPropertyGroups, toggleMode)
+  InteractionManager.setupClickInteractions(firstInstance, secondInstance, propertyGroups, otherPropertyGroups, !allowMultiple)
     .then(() => {
-      const message = toggleMode 
-        ? 'Click interactions with toggle mode (conflicting properties will be reset) setup completed successfully!' 
-        : 'Click interactions setup completed successfully!';
+      const message = allowMultiple 
+        ? 'Click interactions setup completed successfully! (Multiple instances allowed)' 
+        : 'Click interactions setup completed successfully! (Only one instance per state)';
       NotificationHandler.show(message, 'success');
     })
     .catch((error) => {

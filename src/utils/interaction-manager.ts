@@ -10,11 +10,13 @@ export class InteractionManager {
     secondInstanceName: string,
     firstPropertyGroups: any[],
     otherPropertyGroups: any[],
-    toggleMode: boolean = false
+    exclusiveMode: boolean = false
   ): Promise<void> {
     try {
       // Set up click reactions using the new unified API
-      await this.setupClickReactions(firstInstanceName, secondInstanceName, firstPropertyGroups, otherPropertyGroups, toggleMode);
+      // exclusiveMode = true means only one instance per state (toggle behavior)
+      // exclusiveMode = false means multiple instances allowed
+      await this.setupClickReactions(firstInstanceName, secondInstanceName, firstPropertyGroups, otherPropertyGroups, exclusiveMode);
       
       
       
@@ -32,7 +34,7 @@ export class InteractionManager {
     secondInstanceName: string,
     firstPropertyGroups: any[], 
     otherPropertyGroups: any[],
-    toggleMode: boolean = false
+    exclusiveMode: boolean = false
   ): Promise<void> {
     return new Promise((resolve, reject) => {
       const messageId = Date.now().toString();
@@ -59,7 +61,7 @@ export class InteractionManager {
           secondInstanceName: secondInstanceName,
           firstPropertyGroups: firstPropertyGroups,
           otherPropertyGroups: otherPropertyGroups,
-          toggleMode: toggleMode
+          exclusiveMode: exclusiveMode
         }
       }, '*');
     });

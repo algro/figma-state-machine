@@ -24,8 +24,8 @@ export default (function App() {
 					</div>
 					<div class="toggle-container">
 						<label class="toggle-label">
-							<input type="checkbox" id="toggle-exclusive" class="toggle-input">
-							<span class="toggle-text">Toggle mode (reset conflicting properties to default)</span>
+							<input type="checkbox" id="allow-multiple" class="toggle-input">
+							<span class="toggle-text">Allow multiple instances with same state</span>
 						</label>
 					</div>
 					<p class="label">And set other</p>
