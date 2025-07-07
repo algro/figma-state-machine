@@ -10,11 +10,6 @@ export default (function App() {
 			</div>
 			<div id="instance-selection" class="instance-selection" style="display: none;">
 				<div class="form-group">
-					
-					<select id="interaction-type" class="select-input">
-						<option value="">Mouse down on</option>
-						<option value="">Hover on</option>
-					</select>
 					<select id="click-target" class="instance-select select-input">
 						<option value="">Choose an instance...</option>
 					</select>
@@ -22,7 +17,7 @@ export default (function App() {
 					<div id="property-groups" class="property-groups">
 						<!-- Property groups will be dynamically generated here -->
 					</div>
-					<p class="label">And set all other instances to</p>
+					<p class="label">And set all others instances to</p>
 					<div id="property-groups-others" class="property-groups">
 						<!-- Property groups will be dynamically generated here -->
 					</div>
