@@ -12,13 +12,13 @@ export default (function App() {
 				<div class="form-group">
 					
 					<select id="interaction-type" class="select-input">
-						<option value="">Click on</option>
+						<option value="">Mouse down on</option>
 						<option value="">Hover on</option>
 					</select>
 					<select id="click-target" class="instance-select select-input">
 						<option value="">Choose an instance...</option>
 					</select>
-					<p class="label">Set clicked instance to</p>
+					<p class="label">Set pressed instance to</p>
 					<div id="property-groups" class="property-groups">
 						<!-- Property groups will be dynamically generated here -->
 					</div>

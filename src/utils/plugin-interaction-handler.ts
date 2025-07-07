@@ -353,8 +353,8 @@ export class PluginInteractionHandler {
   }
   
   /**
-   * Set up click reactions on instances of the first instance type
-   * Creates real prototype interactions that set variables when instances are clicked
+   * Set up mouse down reactions on instances of the first instance type
+   * Creates real prototype interactions that set variables when instances are pressed
    */
   static async setupClickReactions(
     firstInstanceName: string, 
@@ -363,7 +363,7 @@ export class PluginInteractionHandler {
     otherPropertyGroups: any[]
   ): Promise<void> {
     try {
-      console.log('=== SETUP CLICK REACTIONS START ===');
+      console.log('=== SETUP MOUSE DOWN REACTIONS START ===');
       console.log('First instance name:', firstInstanceName);
       console.log('Second instance name:', secondInstanceName);
       console.log('First property groups:', firstPropertyGroups);
@@ -438,13 +438,13 @@ export class PluginInteractionHandler {
       );
     }
     
-    console.log(`Set up prototype interactions for ${validInstances.length} instances of type: ${secondInstanceName}`);
+    console.log(`Set up mouse down prototype interactions for ${validInstances.length} instances of type: ${secondInstanceName}`);
     console.log(`Set up variable bindings for all instances`);
     
     // Notify Figma UI to refresh and show the variable bindings
     console.log('Notifying UI to refresh variable bindings...');
     
-    console.log('=== SETUP CLICK REACTIONS END ===');
+    console.log('=== SETUP MOUSE DOWN REACTIONS END ===');
     } catch (error) {
       console.error('Error in setupClickReactions:', error);
       throw error;
@@ -501,7 +501,7 @@ export class PluginInteractionHandler {
       // Create actions array
       const actions: any[] = [];
       
-      // Get the current instance index to identify which instance is being clicked
+      // Get the current instance index to identify which instance is being pressed
       const currentInstanceIndex = allInstances.findIndex((inst: any) => inst.id === instance.id);
       console.log(`Current instance index: ${currentInstanceIndex}`);
       
@@ -523,33 +523,33 @@ export class PluginInteractionHandler {
         let targetValue = null;
         let shouldSetVariable = false;
         
-        // Check if this is the clicked instance
+        // Check if this is the pressed instance
         if (variableInstanceIndex === currentInstanceIndex) {
-          // "Set clicked instance to" section: Set variables for the clicked instance
+          // "Set pressed instance to" section: Set variables for the pressed instance
           const firstPropertyGroup = firstPropertyGroups.find((pg: any) => pg.propertyName === propertyName);
           if (firstPropertyGroup) {
-            const clickedInstance = allInstances[currentInstanceIndex];
+            const pressedInstance = allInstances[currentInstanceIndex];
             const targetState = firstPropertyGroup.selectedVariant;
             
-            // Radio behavior: Always set clicked instance to target state
+            // Radio behavior: Always set pressed instance to target state
             targetValue = targetState;
-            console.log(`Setting clicked instance variable: ${variable.name} = ${targetValue}`);
+            console.log(`Setting pressed instance variable: ${variable.name} = ${targetValue}`);
             shouldSetVariable = true;
           }
         } else {
-          // "And set all other instances to" section: Set variables for all OTHER instances (not the clicked one)
-          const clickedInstancePropertyGroup = firstPropertyGroups.find((pg: any) => pg.propertyName === propertyName);
+          // "And set all other instances to" section: Set variables for all OTHER instances (not the pressed one)
+          const pressedInstancePropertyGroup = firstPropertyGroups.find((pg: any) => pg.propertyName === propertyName);
           
-          // Only process this property if it's actually being set on the clicked instance
-          if (clickedInstancePropertyGroup) {
+          // Only process this property if it's actually being set on the pressed instance
+          if (pressedInstancePropertyGroup) {
             const targetInstance = allInstances[variableInstanceIndex];
             if (targetInstance && targetInstance.componentProperties && targetInstance.componentProperties[propertyName]) {
               const currentProperty = targetInstance.componentProperties[propertyName];
               const currentValue = currentProperty.value || currentProperty;
-              const clickedInstanceTargetValue = clickedInstancePropertyGroup.selectedVariant;
+              const pressedInstanceTargetValue = pressedInstancePropertyGroup.selectedVariant;
               
-              // Only reset THIS property if it currently has the same value that the clicked instance will be set to
-              if (currentValue === clickedInstanceTargetValue) {
+              // Only reset THIS property if it currently has the same value that the pressed instance will be set to
+              if (currentValue === pressedInstanceTargetValue) {
                 // Use "And set all other instances to" configuration, but ignore "keep-initial" for resets
                 const otherPropertyGroup = otherPropertyGroups.find((pg: any) => pg.propertyName === propertyName);
                 if (otherPropertyGroup && otherPropertyGroup.selectedVariant !== 'keep-initial') {
@@ -573,7 +573,7 @@ export class PluginInteractionHandler {
               }
             }
           } else {
-            // This property is not being set on the clicked instance, so keep it unchanged
+            // This property is not being set on the pressed instance, so keep it unchanged
             const targetInstance = allInstances[variableInstanceIndex];
             if (targetInstance && targetInstance.componentProperties && targetInstance.componentProperties[propertyName]) {
               const currentProperty = targetInstance.componentProperties[propertyName];
@@ -621,7 +621,7 @@ export class PluginInteractionHandler {
       
       // Create the reaction object
       const reaction = {
-        trigger: { type: 'ON_CLICK' },
+        trigger: { type: 'MOUSE_DOWN', delay: 0 },
         actions: actions
       };
       
@@ -641,7 +641,7 @@ export class PluginInteractionHandler {
         const testVariable = allInstanceVariables[0];
         const testVariableType = testVariable.resolvedType || 'STRING';
         const testReaction = {
-          trigger: { type: 'ON_CLICK' },
+          trigger: { type: 'MOUSE_DOWN', delay: 0 },
           actions: [{
             type: 'SET_VARIABLE',
             variableId: testVariable.id,
@@ -677,7 +677,7 @@ export class PluginInteractionHandler {
       // Fallback: create a simple reaction with just variable setting
       try {
         const fallbackReaction = {
-          trigger: { type: 'ON_CLICK' },
+          trigger: { type: 'MOUSE_DOWN', delay: 0 },
           actions: [{
             type: 'SET_VARIABLE',
             variableId: allInstanceVariables[0].id,
@@ -920,22 +920,22 @@ export class PluginInteractionHandler {
             };
           }
           
-        case 'setup-click-reactions':
+        case 'setup-mouse-down-reactions':
           try {
-            console.log('Starting setup-click-reactions...');
+            console.log('Starting setup-mouse-down-reactions...');
             await this.setupClickReactions(
               message.firstInstanceName,
               message.secondInstanceName,
               message.firstPropertyGroups || [],
               message.otherPropertyGroups || []
             );
-            console.log('setup-click-reactions completed successfully');
+            console.log('setup-mouse-down-reactions completed successfully');
             return {
               success: true,
               messageId: message.messageId
             };
           } catch (error) {
-            console.error('Error in setup-click-reactions:', error);
+            console.error('Error in setup-mouse-down-reactions:', error);
             return {
               success: false,
               error: (error as Error).message,

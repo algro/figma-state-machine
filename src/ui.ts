@@ -68,14 +68,14 @@ function handleAddInteractionClick() {
   
   console.log('Setting up radio behavior interactions');
   
-  // The propertyGroups are for the clicked instance (first property groups)
+  // The propertyGroups are for the pressed instance (first property groups)
   // The otherPropertyGroups are for "other" instances of the same component
   // Both are for the same instance type (secondInstance), but different behaviors
   
   // Set up the interactions with radio behavior
   InteractionManager.setupClickInteractions(firstInstance, secondInstance, propertyGroups, otherPropertyGroups)
     .then(() => {
-      NotificationHandler.show('Click interactions setup completed successfully! (Radio behavior enabled)', 'success');
+      NotificationHandler.show('Mouse down interactions setup completed successfully! (Radio behavior enabled)', 'success');
     })
     .catch((error) => {
       console.error('Failed to setup interactions:', error);
@@ -102,12 +102,12 @@ window.addEventListener('message', async (event) => {
     } else {
       NotificationHandler.show(`Interaction setup failed: ${message.error}`, 'error');
     }
-  } else if (message && message.type === 'setup-click-reactions-response') {
-    console.log('Processing click reactions response:', message);
+  } else if (message && message.type === 'setup-mouse-down-reactions-response') {
+    console.log('Processing mouse down reactions response:', message);
     if (message.success) {
-      NotificationHandler.show('Click interactions setup completed successfully! (Radio behavior enabled)', 'success');
+      NotificationHandler.show('Mouse down interactions setup completed successfully! (Radio behavior enabled)', 'success');
     } else {
-      NotificationHandler.show(`Click interactions setup failed: ${message.error}`, 'error');
+      NotificationHandler.show(`Mouse down interactions setup failed: ${message.error}`, 'error');
     }
   }
 });

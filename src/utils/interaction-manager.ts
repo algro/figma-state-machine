@@ -1,10 +1,10 @@
 
-// Interaction Manager - Handles variable collection and click reactions setup
+// Interaction Manager - Handles variable collection and mouse down reactions setup
 
 export class InteractionManager {
   
   /**
-   * Set up click interactions between two instance selections
+   * Set up mouse down interactions between two instance selections
    */
   static async setupClickInteractions(
     firstInstanceName: string,
@@ -13,20 +13,20 @@ export class InteractionManager {
     otherPropertyGroups: any[]
   ): Promise<void> {
     try {
-      // Set up click reactions using the new unified API
+      // Set up mouse down reactions using the new unified API
       // Radio behavior: only one instance per state
       await this.setupClickReactions(firstInstanceName, secondInstanceName, firstPropertyGroups, otherPropertyGroups);
       
       
       
     } catch (error) {
-      console.error('Error setting up click interactions:', error);
+      console.error('Error setting up mouse down interactions:', error);
       throw error;
     }
   }
   
   /**
-   * Set up click reactions on first instance instances
+   * Set up mouse down reactions on first instance instances
    */
   private static async setupClickReactions(
     firstInstanceName: string, 
@@ -39,7 +39,7 @@ export class InteractionManager {
       
       const handleResponse = (event: MessageEvent) => {
         const message = event.data.pluginMessage;
-        if (message && message.type === 'click-reactions-response' && message.messageId === messageId) {
+        if (message && message.type === 'mouse-down-reactions-response' && message.messageId === messageId) {
           window.removeEventListener('message', handleResponse);
           if (message.success) {
             resolve();
@@ -53,7 +53,7 @@ export class InteractionManager {
       
       parent.postMessage({
         pluginMessage: {
-          type: 'setup-click-reactions',
+          type: 'setup-mouse-down-reactions',
           messageId: messageId,
           firstInstanceName: firstInstanceName,
           secondInstanceName: secondInstanceName,
@@ -90,13 +90,13 @@ export class InteractionManager {
   }
   
   /**
-   * Get selected instance name from the click target dropdown
+   * Get selected instance name from the mouse down target dropdown
    */
   static getSelectedInstances(): { firstInstance: string, secondInstance: string } {
-    const clickTargetSelect = document.getElementById('click-target') as HTMLSelectElement;
+    const mouseDownTargetSelect = document.getElementById('click-target') as HTMLSelectElement;
     
-    if (clickTargetSelect) {
-      const selectedInstance = clickTargetSelect.value;
+    if (mouseDownTargetSelect) {
+      const selectedInstance = mouseDownTargetSelect.value;
       return {
         firstInstance: selectedInstance,
         secondInstance: selectedInstance // Use the same instance for both
