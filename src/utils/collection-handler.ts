@@ -2,8 +2,9 @@ export function getVariableByName(name: string): Variable | undefined {
     return figma.variables.getLocalVariables().find(v => v.name === name)
   }
   
-  export function getCollectionByName(name: string): VariableCollection | undefined {
-    return figma.variables.getLocalVariableCollections().find(c => c.name === name)
+  export async function findCollectionByName(name: string) {
+    const collections = await figma.variables.getLocalVariableCollectionsAsync();
+    return collections.find(c => c.name === name);
   }
   
   export function getVariablesForCollection(collectionId: string): Variable[] {

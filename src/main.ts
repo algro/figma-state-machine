@@ -46,11 +46,14 @@ export default function () {
 	};
 	
 	// Process initial selection
-	processAndSendProperties();
+	processAndSendProperties().catch(error => {
+		console.error('Error processing initial selection:', error);
+	});
 	
 	// Listen for selection changes
 	figma.on('selectionchange', () => {
-
-		processAndSendProperties();
+		processAndSendProperties().catch(error => {
+			console.error('Error processing selection change:', error);
+		});
 	});
 }

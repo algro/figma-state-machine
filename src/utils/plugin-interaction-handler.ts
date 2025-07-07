@@ -5,11 +5,9 @@ export class PluginInteractionHandler {
   /**
    * Find or create a variable collection by name
    */
-  static findOrCreateVariableCollection(collectionName: string): any {
-    // First try to find existing collection
-    const existingCollection = figma.variables.getLocalVariableCollections().find(
-      (collection: any) => collection.name === collectionName
-    );
+  static async findOrCreateVariableCollection(collectionName: string): Promise<any> {
+    const collections = await figma.variables.getLocalVariableCollectionsAsync();
+    const existingCollection = collections.find((c: any) => c.name === collectionName);
     
     if (existingCollection) {
       console.log(`Found existing variable collection: ${collectionName}`);
@@ -25,12 +23,12 @@ export class PluginInteractionHandler {
   /**
    * Create individual variables for each instance and property
    */
-  static createIndividualInstanceVariables(
+  static async createIndividualInstanceVariables(
     variableCollection: any,
     instances: any[],
     firstPropertyGroups: any[],
     otherPropertyGroups: any[]
-  ): any[] {
+  ): Promise<any[]> {
     console.log('=== CREATE INDIVIDUAL INSTANCE VARIABLES ===');
     console.log('Variable collection:', variableCollection.name);
     console.log('Instances:', instances.length);
@@ -40,11 +38,12 @@ export class PluginInteractionHandler {
     const allVariables: any[] = [];
     
     // Create variables for each instance
-    instances.forEach((instance, instanceIndex) => {
+    for (let instanceIndex = 0; instanceIndex < instances.length; instanceIndex++) {
+      const instance = instances[instanceIndex];
       console.log(`Creating variables for instance ${instanceIndex + 1}: ${instance.name}`);
       
       // Create variables for "Set" properties (first property groups)
-      firstPropertyGroups.forEach((propertyGroup) => {
+      for (const propertyGroup of firstPropertyGroups) {
         const { propertyName } = propertyGroup;
         
         // Only create variable if the property exists on this instance
@@ -53,29 +52,37 @@ export class PluginInteractionHandler {
           
           // Get the current value of this property on this instance
           const currentProperty = instance.componentProperties[propertyName];
-          const currentValue = currentProperty && typeof currentProperty === 'object' && 'value' in currentProperty 
+          let currentValue = currentProperty && typeof currentProperty === 'object' && 'value' in currentProperty 
             ? currentProperty.value 
             : currentProperty;
           
           // Get property definition to determine variable type
-          const propertyDefinition = this.getPropertyDefinition(instance, propertyName);
+          const propertyDefinition = await this.getPropertyDefinition(instance, propertyName);
           let variableType = this.determineVariableType(propertyDefinition, String(currentValue));
-          // For VARIANT properties, always use STRING
+          // For VARIANT properties, always use STRING and ensure value is valid
           if (propertyDefinition && propertyDefinition.type === 'VARIANT') {
             variableType = 'STRING';
+            if (
+              propertyDefinition.variantOptions &&
+              !propertyDefinition.variantOptions.includes(String(currentValue))
+            ) {
+              // Fallback to the first variant option if currentValue is not valid
+              currentValue = propertyDefinition.variantOptions[0];
+              console.warn(`Current value for ${propertyName} is not a valid variant. Falling back to:`, currentValue);
+            }
           }
           
           console.log(`Creating variable for ${propertyName} with current value: ${currentValue} (type: ${variableType})`);
-          const variable = this.findOrCreateVariable(variableCollection, variableName, String(currentValue), variableType);
+          const variable = await this.findOrCreateVariable(variableCollection, variableName, String(currentValue), variableType);
           allVariables.push(variable);
           console.log(`Created variable: ${variableName} = ${currentValue} (type: ${variableType})`);
         } else {
           console.log(`Skipping variable for ${propertyName} - property not found on instance ${instance.name}`);
         }
-      });
+      }
       
       // Create variables for "And set other" properties (other property groups)
-      otherPropertyGroups.forEach((propertyGroup) => {
+      for (const propertyGroup of otherPropertyGroups) {
         const { propertyName, selectedVariant } = propertyGroup;
         
         if (selectedVariant !== 'keep-initial') {
@@ -85,20 +92,28 @@ export class PluginInteractionHandler {
             
             // Get the current value of this property on this instance
             const currentProperty = instance.componentProperties[propertyName];
-            const currentValue = currentProperty && typeof currentProperty === 'object' && 'value' in currentProperty 
+            let currentValue = currentProperty && typeof currentProperty === 'object' && 'value' in currentProperty 
               ? currentProperty.value 
               : currentProperty;
             
             // Get property definition to determine variable type
-            const propertyDefinition = this.getPropertyDefinition(instance, propertyName);
+            const propertyDefinition = await this.getPropertyDefinition(instance, propertyName);
             let variableType = this.determineVariableType(propertyDefinition, String(currentValue));
-            // For VARIANT properties, always use STRING
+            // For VARIANT properties, always use STRING and ensure value is valid
             if (propertyDefinition && propertyDefinition.type === 'VARIANT') {
               variableType = 'STRING';
+              if (
+                propertyDefinition.variantOptions &&
+                !propertyDefinition.variantOptions.includes(String(currentValue))
+              ) {
+                // Fallback to the first variant option if currentValue is not valid
+                currentValue = propertyDefinition.variantOptions[0];
+                console.warn(`Current value for ${propertyName} is not a valid variant. Falling back to:`, currentValue);
+              }
             }
             
             console.log(`Creating variable for ${propertyName} with current value: ${currentValue} (type: ${variableType})`);
-            const variable = this.findOrCreateVariable(variableCollection, variableName, String(currentValue), variableType);
+            const variable = await this.findOrCreateVariable(variableCollection, variableName, String(currentValue), variableType);
             allVariables.push(variable);
             console.log(`Created variable: ${variableName} = ${currentValue} (type: ${variableType})`);
           } else {
@@ -107,8 +122,8 @@ export class PluginInteractionHandler {
         } else {
           console.log(`Skipping variable for ${instance.name}_${propertyName}_${instanceIndex} (keep-initial)`);
         }
-      });
-    });
+      }
+    }
     
     console.log(`Created ${allVariables.length} total variables for all instances`);
     console.log('=== CREATE INDIVIDUAL INSTANCE VARIABLES END ===');
@@ -250,11 +265,12 @@ export class PluginInteractionHandler {
   /**
    * Find or create a variable with the given name, value, and type
    */
-  private static findOrCreateVariable(variableCollection: any, variableName: string, value: string, variableType: 'STRING' | 'BOOLEAN'): any {
+  private static async findOrCreateVariable(variableCollection: any, variableName: string, value: string, variableType: 'STRING' | 'BOOLEAN'): Promise<any> {
     // Check if variable already exists
-    const existingVariable = variableCollection.variableIds
-      .map((id: string) => figma.variables.getVariableById(id))
-      .find((variable: any) => variable && variable.name === variableName);
+    const existingVariablePromises = variableCollection.variableIds
+      .map(async (id: string) => await figma.variables.getVariableByIdAsync(id));
+    const existingVariables = await Promise.all(existingVariablePromises);
+    const existingVariable = existingVariables.find((variable: any) => variable && variable.name === variableName);
     
     if (existingVariable) {
       console.log(`Using existing variable: ${variableName}`);
@@ -307,27 +323,28 @@ export class PluginInteractionHandler {
       console.log(`Variable name: ${variableName}`);
       
       // Check if variable already exists
-      const existingVariable = variableCollection.variableIds
-        .map((id: string) => figma.variables.getVariableById(id))
-        .find((variable: any) => variable && variable.name === variableName);
-      
-      if (existingVariable) {
-        variables.push(existingVariable);
-        console.log(`Using existing variable: ${variableName}`);
-      } else {
-        // Create new variable
-        const newVariable = figma.variables.createVariable(
-          variableName,
-          variableCollection,
-          'STRING'
-        );
-        
-        // Set the initial value to the selected variant
-        newVariable.setValueForMode(variableCollection.defaultModeId, selectedVariant);
-        
-        variables.push(newVariable);
-        console.log(`Created new variable: ${variableName} with value: ${selectedVariant}`);
-      }
+      const existingVariablePromises = variableCollection.variableIds
+        .map(async (id: string) => await figma.variables.getVariableByIdAsync(id));
+      Promise.all(existingVariablePromises).then(existingVariables => {
+        const existingVariable = existingVariables.find((variable: any) => variable && variable.name === variableName);
+        if (existingVariable) {
+          variables.push(existingVariable);
+          console.log(`Using existing variable: ${variableName}`);
+        } else {
+          // Create new variable
+          const newVariable = figma.variables.createVariable(
+            variableName,
+            variableCollection,
+            'STRING'
+          );
+          
+          // Set the initial value to the selected variant
+          newVariable.setValueForMode(variableCollection.defaultModeId, selectedVariant);
+          
+          variables.push(newVariable);
+          console.log(`Created new variable: ${variableName} with value: ${selectedVariant}`);
+        }
+      });
     });
     
     console.log(`Created ${variables.length} variables:`, variables.map(v => v.name));
@@ -345,12 +362,13 @@ export class PluginInteractionHandler {
     firstPropertyGroups: any[], 
     otherPropertyGroups: any[]
   ): Promise<void> {
-    console.log('=== SETUP CLICK REACTIONS START ===');
-    console.log('First instance name:', firstInstanceName);
-    console.log('Second instance name:', secondInstanceName);
-    console.log('First property groups:', firstPropertyGroups);
-    console.log('Other property groups:', otherPropertyGroups);
-    console.log('Radio behavior mode enabled');
+    try {
+      console.log('=== SETUP CLICK REACTIONS START ===');
+      console.log('First instance name:', firstInstanceName);
+      console.log('Second instance name:', secondInstanceName);
+      console.log('First property groups:', firstPropertyGroups);
+      console.log('Other property groups:', otherPropertyGroups);
+      console.log('Radio behavior mode enabled');
     
     // Find instances of the second type within the current selection context
     const instances = this.findInstancesInSelectionContext(secondInstanceName);
@@ -375,13 +393,13 @@ export class PluginInteractionHandler {
     }
     
     // STEP 1: Create a variable collection for all state variables
-    const variableCollection = this.findOrCreateVariableCollection('State Machine Variables');
+    const variableCollection = await this.findOrCreateVariableCollection('State Machine Variables');
     console.log('Variable collection:', variableCollection.name, variableCollection.id);
     
 
     
     // STEP 3: Create individual variables for each instance
-    const allInstanceVariables = this.createIndividualInstanceVariables(
+    const allInstanceVariables = await this.createIndividualInstanceVariables(
       variableCollection, 
       validInstances, 
       firstPropertyGroups, 
@@ -427,6 +445,10 @@ export class PluginInteractionHandler {
     console.log('Notifying UI to refresh variable bindings...');
     
     console.log('=== SETUP CLICK REACTIONS END ===');
+    } catch (error) {
+      console.error('Error in setupClickReactions:', error);
+      throw error;
+    }
   }
   
 
@@ -485,6 +507,11 @@ export class PluginInteractionHandler {
       
       // Create SET_VARIABLE actions for all instances and their properties
       for (const variable of allInstanceVariables) {
+        // Check if variable has a valid name
+        if (!variable.name || typeof variable.name !== 'string') {
+          console.error(`Variable has invalid name:`, variable);
+          continue;
+        }
         // Extract instance name, property, and instance index from variable name
         const variableNameParts = variable.name.split('_');
         const instanceName = variableNameParts[0];
@@ -707,9 +734,9 @@ export class PluginInteractionHandler {
             console.log(`Binding variable ${variable.name} to property ${propertyName}`);
             
             // Verify the variable exists and is accessible
-            const verifiedVariable = figma.variables.getVariableById(variable.id);
+            const verifiedVariable = await figma.variables.getVariableByIdAsync(variable.id);
             if (!verifiedVariable) {
-              console.error(`Variable ${variable.name} (${variable.id}) not found in Figma variables`);
+              console.error(`Variable ${variable.name} (${variable.id}) not found in Figma variables, skipping binding for property ${propertyName}`);
               continue;
             }
             
@@ -851,69 +878,86 @@ export class PluginInteractionHandler {
    * Handle interaction setup messages from the UI
    */
   static async handleInteractionMessage(message: any): Promise<any> {
-    switch (message.type) {
-      case 'find-or-create-variable-collection':
-        try {
-          const collection = this.findOrCreateVariableCollection(message.collectionName);
-          return {
-            success: true,
-            data: collection,
-            messageId: message.messageId
-          };
-        } catch (error) {
+    console.log('Handling interaction message:', message);
+    
+    try {
+      switch (message.type) {
+        case 'find-or-create-variable-collection':
+          try {
+            const collection = await this.findOrCreateVariableCollection(message.collectionName);
+            return {
+              success: true,
+              data: collection,
+              messageId: message.messageId
+            };
+          } catch (error) {
+            console.error('Error in find-or-create-variable-collection:', error);
+            return {
+              success: false,
+              error: (error as Error).message,
+              messageId: message.messageId
+            };
+          }
+          
+        case 'create-state-variables':
+          try {
+            const variables = this.createStateVariables(
+              message.variableCollection,
+              message.instanceName,
+              message.propertyGroups
+            );
+            return {
+              success: true,
+              data: variables,
+              messageId: message.messageId
+            };
+          } catch (error) {
+            console.error('Error in create-state-variables:', error);
+            return {
+              success: false,
+              error: (error as Error).message,
+              messageId: message.messageId
+            };
+          }
+          
+        case 'setup-click-reactions':
+          try {
+            console.log('Starting setup-click-reactions...');
+            await this.setupClickReactions(
+              message.firstInstanceName,
+              message.secondInstanceName,
+              message.firstPropertyGroups || [],
+              message.otherPropertyGroups || []
+            );
+            console.log('setup-click-reactions completed successfully');
+            return {
+              success: true,
+              messageId: message.messageId
+            };
+          } catch (error) {
+            console.error('Error in setup-click-reactions:', error);
+            return {
+              success: false,
+              error: (error as Error).message,
+              messageId: message.messageId
+            };
+          }
+          
+        default:
+          console.warn('Unknown message type:', message.type);
           return {
             success: false,
-            error: (error as Error).message,
+            error: 'Unknown message type',
             messageId: message.messageId
           };
-        }
-        
-      case 'create-state-variables':
-        try {
-          const variables = this.createStateVariables(
-            message.variableCollection,
-            message.instanceName,
-            message.propertyGroups
-          );
-          return {
-            success: true,
-            data: variables,
-            messageId: message.messageId
-          };
-        } catch (error) {
-          return {
-            success: false,
-            error: (error as Error).message,
-            messageId: message.messageId
-          };
-        }
-        
-      case 'setup-click-reactions':
-        try {
-          await this.setupClickReactions(
-            message.firstInstanceName,
-            message.secondInstanceName,
-            message.firstPropertyGroups || [],
-            message.otherPropertyGroups || []
-          );
-          return {
-            success: true,
-            messageId: message.messageId
-          };
-        } catch (error) {
-          return {
-            success: false,
-            error: (error as Error).message,
-            messageId: message.messageId
-          };
-        }
-        
-      default:
-        return {
-          success: false,
-          error: 'Unknown message type',
-          messageId: message.messageId
-        };
+      }
+    } catch (error) {
+      console.error('Unexpected error in handleInteractionMessage:', error);
+      return {
+        success: false,
+        error: (error as Error).message,
+        messageId: message.messageId
+      };
     }
   }
 } 

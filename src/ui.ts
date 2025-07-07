@@ -84,7 +84,7 @@ function handleAddInteractionClick() {
 }
 
 // Listen for messages from the plugin
-window.onmessage = async (event) => {
+window.addEventListener('message', async (event) => {
   console.log('UI received message:', event.data);
   
   const message = event.data.pluginMessage;
@@ -95,8 +95,22 @@ window.onmessage = async (event) => {
   } else if (message && message.type === 'instance-properties') {
     console.log('Processing instance properties:', message.data);
     updateUIState(message.data);
+  } else if (message && message.type === 'interaction-response') {
+    console.log('Processing interaction response:', message);
+    if (message.success) {
+      NotificationHandler.show('Interaction setup completed successfully!', 'success');
+    } else {
+      NotificationHandler.show(`Interaction setup failed: ${message.error}`, 'error');
+    }
+  } else if (message && message.type === 'setup-click-reactions-response') {
+    console.log('Processing click reactions response:', message);
+    if (message.success) {
+      NotificationHandler.show('Click interactions setup completed successfully! (Radio behavior enabled)', 'success');
+    } else {
+      NotificationHandler.show(`Click interactions setup failed: ${message.error}`, 'error');
+    }
   }
-};
+});
 
 // Add event listener for Add Interaction button
 document.addEventListener('DOMContentLoaded', () => {
