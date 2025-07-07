@@ -66,14 +66,23 @@ function handleAddInteractionClick() {
     return;
   }
   
+  // Get toggle mode state
+  const toggleCheckbox = document.getElementById('toggle-exclusive') as HTMLInputElement;
+  const toggleMode = toggleCheckbox ? toggleCheckbox.checked : false;
+  
+  console.log('Toggle mode enabled:', toggleMode);
+  
   // The propertyGroups are for the clicked instance (first property groups)
   // The otherPropertyGroups are for "other" instances of the same component
   // Both are for the same instance type (secondInstance), but different behaviors
   
   // Set up the interactions
-  InteractionManager.setupClickInteractions(firstInstance, secondInstance, propertyGroups, otherPropertyGroups)
+  InteractionManager.setupClickInteractions(firstInstance, secondInstance, propertyGroups, otherPropertyGroups, toggleMode)
     .then(() => {
-      NotificationHandler.show('Click interactions setup completed successfully!', 'success');
+      const message = toggleMode 
+        ? 'Click interactions with toggle mode (conflicting properties will be reset) setup completed successfully!' 
+        : 'Click interactions setup completed successfully!';
+      NotificationHandler.show(message, 'success');
     })
     .catch((error) => {
       console.error('Failed to setup interactions:', error);

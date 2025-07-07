@@ -179,25 +179,30 @@ html {
   flex: 1;
 }
 
-.add-interaction {
-  margin-top: 16px;
-  padding: 8px 16px;
-  border-radius: 6px;
+.toggle-container {
+  margin: 16px 0;
+  padding: 12px;
   border: 1px solid var(--figma-color-border);
-  background-color: var(--figma-color-bg-brand);
-  color: var(--figma-color-text-onbrand);
-  font-size: 14px;
-  font-family: inherit;
+  border-radius: 6px;
+  background-color: var(--figma-color-bg-secondary);
+}
+
+.toggle-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   cursor: pointer;
-  transition: background-color 0.2s ease;
+  font-size: 14px;
+  color: var(--figma-color-text);
 }
 
-.add-interaction:hover {
-  background-color: var(--figma-color-bg-brand-hover);
+.toggle-input {
+  margin: 0;
+  cursor: pointer;
 }
 
-.add-interaction:active {
-  background-color: var(--figma-color-bg-brand-pressed);
+.toggle-text {
+  user-select: none;
 }
 
 .add-interaction {

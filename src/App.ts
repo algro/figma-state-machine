@@ -22,11 +22,17 @@ export default (function App() {
 					<div id="property-groups" class="property-groups">
 						<!-- Property groups will be dynamically generated here -->
 					</div>
+					<div class="toggle-container">
+						<label class="toggle-label">
+							<input type="checkbox" id="toggle-exclusive" class="toggle-input">
+							<span class="toggle-text">Toggle mode (reset conflicting properties to default)</span>
+						</label>
+					</div>
 					<p class="label">And set other</p>
 					<div id="property-groups-others" class="property-groups">
 						<!-- Property groups will be dynamically generated here -->
 					</div>
-					<button class=add-interaction>Add Interaction</button>
+					<button class="add-interaction">Add Interaction</button>
 				
 
 				</div>

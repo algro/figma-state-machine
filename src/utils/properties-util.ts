@@ -60,8 +60,14 @@ export class PropertiesUtil {
     for (const instance of instances) {
       const mainComponent = instance.mainComponent;
       
-      // Skip instances with no properties
-      const properties = instance.componentProperties;
+      // Skip instances with no properties or broken component sets
+      let properties: any = {};
+      try {
+        properties = instance.componentProperties;
+      } catch {
+        continue;
+      }
+      
       if (Object.keys(properties).length === 0) {
         continue;
       }
@@ -126,19 +132,27 @@ export class PropertiesUtil {
     const propertyDefinitions: { [propertyName: string]: ComponentPropertyDefinition } = {};
     
     try {
-      let componentForDefinitions: BaseNode | null = mainComponent;
+      let componentForDefinitions: BaseNode | null = null;
       
-      // If the main component is a variant, get definitions from its parent (component set)
-      if (mainComponent && mainComponent.parent && mainComponent.parent.type === 'COMPONENT_SET') {
-        componentForDefinitions = mainComponent.parent;
+      // Check if main component exists and get the right component for definitions
+      if (mainComponent) {
+        // If the main component is a variant (has a parent that's a component set), 
+        // get definitions from the component set
+        if (mainComponent.parent && mainComponent.parent.type === 'COMPONENT_SET') {
+          componentForDefinitions = mainComponent.parent;
+        } else {
+          // If it's a non-variant component, use it directly
+          componentForDefinitions = mainComponent;
+        }
       }
       
-              if (componentForDefinitions && 'componentPropertyDefinitions' in componentForDefinitions) {
-          const definitions = (componentForDefinitions as any).componentPropertyDefinitions;
-          for (const [key, definition] of Object.entries(definitions)) {
-            propertyDefinitions[key] = definition as ComponentPropertyDefinition;
-          }
+      // Only try to access componentPropertyDefinitions if we have a valid component
+      if (componentForDefinitions && 'componentPropertyDefinitions' in componentForDefinitions) {
+        const definitions = (componentForDefinitions as any).componentPropertyDefinitions;
+        for (const [key, definition] of Object.entries(definitions)) {
+          propertyDefinitions[key] = definition as ComponentPropertyDefinition;
         }
+      }
     } catch (error) {
       console.warn('Could not get component property definitions:', error);
     }

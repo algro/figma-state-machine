@@ -9,11 +9,12 @@ export class InteractionManager {
     firstInstanceName: string,
     secondInstanceName: string,
     firstPropertyGroups: any[],
-    otherPropertyGroups: any[]
+    otherPropertyGroups: any[],
+    toggleMode: boolean = false
   ): Promise<void> {
     try {
       // Set up click reactions using the new unified API
-      await this.setupClickReactions(firstInstanceName, secondInstanceName, firstPropertyGroups, otherPropertyGroups);
+      await this.setupClickReactions(firstInstanceName, secondInstanceName, firstPropertyGroups, otherPropertyGroups, toggleMode);
       
       
       
@@ -30,7 +31,8 @@ export class InteractionManager {
     firstInstanceName: string, 
     secondInstanceName: string,
     firstPropertyGroups: any[], 
-    otherPropertyGroups: any[]
+    otherPropertyGroups: any[],
+    toggleMode: boolean = false
   ): Promise<void> {
     return new Promise((resolve, reject) => {
       const messageId = Date.now().toString();
@@ -56,7 +58,8 @@ export class InteractionManager {
           firstInstanceName: firstInstanceName,
           secondInstanceName: secondInstanceName,
           firstPropertyGroups: firstPropertyGroups,
-          otherPropertyGroups: otherPropertyGroups
+          otherPropertyGroups: otherPropertyGroups,
+          toggleMode: toggleMode
         }
       }, '*');
     });
