@@ -178,3 +178,45 @@ html {
 .property-group .select-input {
   flex: 1;
 }
+
+.add-interaction {
+  margin-top: 16px;
+  padding: 8px 16px;
+  border-radius: 6px;
+  border: 1px solid var(--figma-color-border);
+  background-color: var(--figma-color-bg-brand);
+  color: var(--figma-color-text-onbrand);
+  font-size: 14px;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.add-interaction:hover {
+  background-color: var(--figma-color-bg-brand-hover);
+}
+
+.add-interaction:active {
+  background-color: var(--figma-color-bg-brand-pressed);
+}
+
+.add-interaction {
+  margin-top: 16px;
+  padding: 8px 16px;
+  border-radius: 6px;
+  border: 1px solid var(--figma-color-border);
+  background-color: var(--figma-color-bg-brand);
+  color: var(--figma-color-text-onbrand);
+  font-size: 14px;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.add-interaction:hover {
+  background-color: var(--figma-color-bg-brand-hover);
+}
+
+.add-interaction:active {
+  background-color: var(--figma-color-bg-brand-pressed);
+}

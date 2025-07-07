@@ -19,4 +19,4 @@ export class UIStateManager {
       if (instanceSelection) instanceSelection.style.display = 'none';
     }
   }
-} 
+}

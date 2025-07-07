@@ -15,13 +15,10 @@ export default (function App() {
 						<option value="">Click on</option>
 						<option value="">Hover on</option>
 					</select>
-					<select class="instance-select select-input">
+					<select id="click-target" class="instance-select select-input">
 						<option value="">Choose an instance...</option>
 					</select>
 					<p class="label">Set</p>
-					<select class="instance-select select-input">
-						<option value="">Choose an instance...</option>
-					</select>
 					<div id="property-groups" class="property-groups">
 						<!-- Property groups will be dynamically generated here -->
 					</div>
@@ -29,6 +26,7 @@ export default (function App() {
 					<div id="property-groups-others" class="property-groups">
 						<!-- Property groups will be dynamically generated here -->
 					</div>
+					<button class=add-interaction>Add Interaction</button>
 				
 
 				</div>

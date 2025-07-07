@@ -2,36 +2,31 @@
 
 export class DropdownManager {
   
-  /**
-   * Populate instance dropdowns with unique instance names
+    /**
+   * Populate the click target dropdown with unique instance names
    */
-  static populateInstanceDropdowns(instances: any[], onSecondInstanceChange: (event: Event) => void): void {
-    const instanceSelects = document.querySelectorAll('.instance-select') as NodeListOf<HTMLSelectElement>;
+  static populateInstanceDropdowns(instances: any[], onInstanceChange: (event: Event) => void): void {
+    const clickTargetSelect = document.getElementById('click-target') as HTMLSelectElement;
     
-    if (instanceSelects.length > 0) {
+    if (clickTargetSelect) {
       // Get unique instance names
       const uniqueInstanceNames = Array.from(new Set(instances.map(instance => instance.instanceName)));
       
-      // Populate all instance select dropdowns
-      instanceSelects.forEach((select, index) => {
-        // Clear existing options and add default option
-        select.innerHTML = '<option value="">Choose an instance...</option>';
-        
-        // Add instance options
-        uniqueInstanceNames.forEach(instanceName => {
-          const option = document.createElement('option');
-          option.value = instanceName;
-          option.textContent = instanceName;
-          select.appendChild(option);
-        });
-        
-        // Add change listener for the second dropdown (index 1)
-        if (index === 1) {
-          select.addEventListener('change', onSecondInstanceChange);
-        }
+      // Clear existing options and add default option
+      clickTargetSelect.innerHTML = '<option value="">Choose an instance...</option>';
+      
+      // Add instance options
+      uniqueInstanceNames.forEach(instanceName => {
+        const option = document.createElement('option');
+        option.value = instanceName;
+        option.textContent = instanceName;
+        clickTargetSelect.appendChild(option);
       });
       
-      console.log(`Populated ${instanceSelects.length} dropdowns with ${uniqueInstanceNames.length} unique instances`);
+      // Add change listener
+      clickTargetSelect.addEventListener('change', onInstanceChange);
+      
+ 
     }
   }
 } 

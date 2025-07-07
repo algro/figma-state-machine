@@ -174,7 +174,7 @@ export class PropertiesUtil {
    * Main function to process instance properties from selected nodes
    */
   static processInstanceProperties(nodes: SceneNode[]): InstancePropertyData[] {
-    console.log(`Processing ${nodes.length} selected nodes for instance properties`);
+    
     
     // Find all instances in the selected nodes
     const allInstances: InstanceNode[] = [];
@@ -182,11 +182,11 @@ export class PropertiesUtil {
       allInstances.push(...this.findAllInstances(node));
     }
     
-    console.log(`Found ${allInstances.length} total instances`);
+    
     
     // Get unique instances based on main component
     const uniqueInstances = this.getUniqueInstances(allInstances);
-    console.log(`Found ${uniqueInstances.length} unique instances`);
+    
     
     // Extract properties for each unique instance
     const instanceData: InstancePropertyData[] = [];
@@ -194,11 +194,7 @@ export class PropertiesUtil {
       const data = this.getInstanceProperties(instance);
       instanceData.push(data);
       
-      console.log(`Instance: ${data.instanceName}`);
-      console.log(`Main Component: ${data.mainComponentName} (${data.mainComponentId})`);
-      console.log(`Base Component: ${data.baseComponentName} (${data.baseComponentId})`);
-      console.log(`Properties:`, data.properties);
-      console.log(`Path: ${data.parentPath.join(' > ')}`);
+      
     }
     
     return instanceData;
@@ -211,7 +207,7 @@ export class PropertiesUtil {
     const selection = figma.currentPage.selection;
     
     if (selection.length === 0) {
-      console.log('No nodes selected');
+      
       return [];
     }
     

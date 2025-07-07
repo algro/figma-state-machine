@@ -85,7 +85,7 @@ export class PropertyGroupsManager {
         propertyGroupsContainer.appendChild(propertyGroup);
       });
       
-      console.log(`Generated ${propertyNames.length} property groups for ${containerId}`);
+      
     }
   }
   
