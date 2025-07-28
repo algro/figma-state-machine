@@ -34,17 +34,24 @@ export class PropertyGroupsManager {
       propertyGroupsContainer.innerHTML = '';
       
       const properties = selectedInstance.properties;
-      const propertyNames = Object.keys(properties);
+      const propertyDefinitions = selectedInstance.propertyDefinitions;
+      
+      // Use property definitions to get clean property names, fallback to properties keys
+      const propertyNames = Object.keys(propertyDefinitions).length > 0 
+        ? Object.keys(propertyDefinitions) 
+        : Object.keys(properties);
       
       propertyNames.forEach((propertyName, index) => {
         // Create horizontal group for this property
         const propertyGroup = document.createElement('div');
         propertyGroup.className = 'property-group';
         
-        // Create property name display (read-only)
+        // Create property name display (read-only) - use clean property name
         const propertyNameDiv = document.createElement('div');
         propertyNameDiv.className = 'property-name';
-        propertyNameDiv.textContent = propertyName;
+        // Clean the property name by removing any instance ID parts
+        const cleanPropertyName = propertyName.replace(/#[^:]+:\d+$/, '');
+        propertyNameDiv.textContent = cleanPropertyName;
         
         // Create variants dropdown
         const variantsSelect = document.createElement('select');
